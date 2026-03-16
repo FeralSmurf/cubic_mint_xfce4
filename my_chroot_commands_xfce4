@@ -1,0 +1,239 @@
+#!/bin/bash
+# Ask user to confirm images are placed correctly
+echo 
+echo 
+echo "Best of luck! You are going to need it..."
+echo 
+echo 
+
+while true; do
+    read -rp "Are the images in the correct location? Have you placed them in the chroot environment? Just use drag and drop in the terminal. (y/yes to continue): " answer
+    case "$answer" in
+        y|Y|yes|YES )
+            echo "Continuing setup..."
+            break
+            ;;
+        * )
+            echo "Please place the images correctly before continuing."
+            ;;
+    esac
+done
+# Everything below runs only after confirmation
+echo "Continuing with the rest of the script..."
+
+
+# Update package list
+apt update
+apt install -y software-properties-common
+apt update
+
+# 2. Install AnyDesk
+wget -qO- https://keys.anydesk.com/repos/DEB-GPG-KEY | gpg --dearmor | tee /etc/apt/trusted.gpg.d/anydesk.gpg > /dev/null
+echo "deb http://deb.anydesk.com/ all main" | tee /etc/apt/sources.list.d/anydesk.list
+apt update
+apt install -y anydesk
+
+
+# 3. Install Steam
+dpkg --add-architecture i386
+apt update
+apt install -y steam
+
+# 5. Install Flatpak
+apt install -y flatpak
+
+# 6. Add Flathub repository
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+# 7. Install Teams for Linux via Flatpak
+flatpak install -y flathub com.github.IsmaelMartinez.teams_for_linux
+
+# 8. Install Materia Theme and Papirus Icons
+apt install -y materia-gtk-theme papirus-icon-theme
+
+
+# THEME AND PANEL CONFIG
+
+
+# 1. Create System-Wide Config Directories
+mkdir -p /etc/xdg/xfce4/xfconf/xfce-perchannel-xml
+mkdir -p /usr/share/backgrounds/custom
+mkdir -p /usr/share/pixmaps
+mkdir -p /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml
+
+mkdir -p /etc/skel/.config/xfce4/panel/launcher-2
+mkdir -p /etc/skel/.config/xfce4/panel/launcher-3
+mkdir -p /etc/skel/.config/xfce4/panel/launcher-4
+mkdir -p /etc/skel/.config/xfce4/panel/launcher-18
+
+
+# 2. Move files to reliable system paths
+mv -f /root/casa_buna.jpg /usr/share/backgrounds/custom/casa_buna.jpg 2>/dev/null || true
+mv -f /root/icon.png /usr/share/pixmaps/start.png 2>/dev/null || true
+
+
+# 3. OPEN ACCESS TO ALL USERS
+chown -R root:root /usr/share/backgrounds/custom
+chown root:root /usr/share/pixmaps/start.png
+chmod 755 /usr/share/backgrounds/custom
+chmod 755 /usr/share/pixmaps
+chmod 644 /usr/share/backgrounds/custom/casa_buna.jpg 2>/dev/null || true
+chmod 644 /usr/share/pixmaps/start.png 2>/dev/null || true
+
+
+# 4. Force Global Wallpaper (No solid color overrides)
+cat > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="xfce4-desktop" version="1.0">
+  <property name="backdrop" type="empty">
+    <property name="screen0" type="empty">
+      <property name="monitor0" type="empty">
+        <property name="image-path" type="string" value="/usr/share/backgrounds/custom/casa_buna.jpg"/>
+        <property name="image-style" type="int" value="4"/>
+        <property name="workspace0" type="empty">
+          <property name="image-style" type="int" value="4"/>
+          <property name="last-image" type="string" value="/usr/share/backgrounds/custom/casa_buna.jpg"/>
+        </property>
+        <property name="workspace1" type="empty">
+          <property name="image-style" type="int" value="4"/>
+          <property name="last-image" type="string" value="/usr/share/backgrounds/custom/casa_buna.jpg"/>
+        </property>
+      </property>
+    </property>
+  </property>
+</channel>
+EOF
+
+
+# 5. Force Panel Configuration (60px, Icons separated by separators)
+cat > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="xfce4-panel" version="1.0">
+  <property name="panels" type="array">
+    <value type="int" value="1"/>
+  </property>
+  <property name="panel-1" type="empty">
+    <property name="size" type="uint" value="60"/>
+    <property name="position" type="string" value="p=6;x=0;y=0"/>
+    <property name="position-locked" type="bool" value="true"/>
+    <property name="plugin-ids" type="array">
+      <value type="int" value="1"/>
+      <value type="int" value="2"/>
+      <value type="int" value="3"/>
+      <value type="int" value="4"/>
+      <value type="int" value="5"/>
+      <value type="int" value="6"/>
+      <value type="int" value="15"/>
+      <value type="int" value="7"/>
+    </property>
+  </property>
+  <property name="plugins" type="empty">
+    <property name="plugin-1" type="string" value="whiskermenu">
+      <property name="button-icon" type="string" value="/usr/share/pixmaps/start.png"/>
+      <property name="show-button-title" type="bool" value="false"/>
+    </property>
+    <property name="plugin-2" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="firefox.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-3" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="anydesk.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-4" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="teams.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-5" type="string" value="separator">
+      <property name="expand" type="bool" value="true"/>
+      <property name="style" type="int" value="0"/>
+    </property>
+    <property name="plugin-6" type="string" value="tasklist"/>
+    <property name="plugin-7" type="string" value="systray"/>
+    <property name="plugin-15" type="string" value="separator">
+      <property name="style" type="int" value="0"/>
+    </property>
+  </property>
+</channel>
+EOF
+
+
+# 6. Apply Materia Theme and Papirus Icons
+cat > /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="xsettings" version="1.0">
+  <property name="Net" type="empty">
+    <property name="ThemeName" type="string" value="Materia"/>
+    <property name="IconThemeName" type="string" value="Papirus"/>
+  </property>
+</channel>
+EOF
+
+
+# 7. Create Launcher Config files in /etc/skel
+# Individual folders for individual launchers
+mkdir -p /etc/skel/.config/xfce4/panel/launcher-2
+mkdir -p /etc/skel/.config/xfce4/panel/launcher-3
+mkdir -p /etc/skel/.config/xfce4/panel/launcher-4
+
+cat > /etc/skel/.config/xfce4/panel/launcher-2/firefox.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Exec=firefox
+Icon=firefox
+Name=Firefox
+EOF
+
+cat > /etc/skel/.config/xfce4/panel/launcher-3/anydesk.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Exec=anydesk
+Icon=anydesk
+Name=AnyDesk
+EOF
+
+cat > /etc/skel/.config/xfce4/panel/launcher-4/teams.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Exec=flatpak run com.github.IsmaelMartinez.teams_for_linux
+Icon=com.github.IsmaelMartinez.teams_for_linux
+Name=Teams
+EOF
+
+
+# 8. Copy defaults so NEW USERS inherit everything
+cp /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/*.xml \
+   /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/
+
+
+# 9. Propagate to ALL existing home directories (Active User Fix)
+for user_home in /home/* /root; do
+    if [ -d "$user_home" ]; then
+        echo "Syncing config for $user_home..."
+        mkdir -p "$user_home/.config/xfce4/xfconf/xfce-perchannel-xml"
+        mkdir -p "$user_home/.config/xfce4/panel"
+
+        # Sync the panel XML
+        cp /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml "$user_home/.config/xfce4/xfconf/xfce-perchannel-xml/"
+        
+        # Sync all launchers
+        cp -r /etc/skel/.config/xfce4/panel/launcher-* "$user_home/.config/xfce4/panel/"
+        
+        # Clean up legacy/broken files in the active user's folder
+        rm -f "$user_home/.config/xfce4/panel/launcher-18/appfinder.desktop" 2>/dev/null || true
+        
+        # Fix ownership
+        owner=$(stat -c '%U:%G' "$user_home")
+        chown -R "$owner" "$user_home/.config/xfce4"
+    fi
+done
+
+
+# 10. Final Permissions for system defaults
+chmod -R 755 /etc/xdg/xfce4/xfconf
+chmod 644 /etc/xdg/xfce4/xfconf/xfce-perchannel-xml/*.xml
+chmod -R 755 /etc/skel/.config
+
